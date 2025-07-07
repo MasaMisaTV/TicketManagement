@@ -48,7 +48,7 @@ h1 {
 </style>
 </head>
 <body>
-<h1>チケカン</h1>
+<h1>🎫 チケカン</h1>
 <div id="ticketCount">0</div>
 <div class="buttons">
   <button onclick="adjustCount(2)">+2</button>
@@ -69,11 +69,18 @@ h1 {
 // チケット枚数
 let count = 0;
 
-// ランダム色生成
-function randomColor() {
-  const colors = ["#ffb3ba", "#bae1ff", "#baffc9", "#ffffba", "#ffdfba", "#d5baff"];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
+// ページ読み込み時にローカルから復元
+window.onload = function() {
+  const savedCount = localStorage.getItem("ticketCount");
+  const savedHistory = localStorage.getItem("ticketHistory");
+  if (savedCount !== null) {
+    count = parseInt(savedCount);
+    document.getElementById("ticketCount").textContent = count;
+  }
+  if (savedHistory) {
+    document.getElementById("historyBody").innerHTML = savedHistory;
+  }
+};
 
 // カウント調整
 function adjustCount(value) {
@@ -81,18 +88,27 @@ function adjustCount(value) {
   if (count < 0) count = 0;
   document.getElementById("ticketCount").textContent = count;
 
-  // 数字色をランダムに変える
-  document.getElementById("ticketCount").style.color = randomColor();
-
-  // 音
-  const beep = new Audio("https://freesound.org/data/previews/66/66717_931655-lq.mp3");
-  beep.play();
-
-  // 履歴に追加
+  // 履歴を表示
   const tr = document.createElement("tr");
   const now = new Date().toLocaleString();
   tr.innerHTML = `<td>${now}</td><td>${value > 0 ? "+" + value : value}</td><td>${count}</td>`;
   document.getElementById("historyBody").prepend(tr);
+
+  // ローカルに保存
+  localStorage.setItem("ticketCount", count);
+  localStorage.setItem("ticketHistory", document.getElementById("historyBody").innerHTML);
+
+  // スプレッドシートに送信
+  fetch("https://script.google.com/macros/s/AKfycbwhibx2kVVflaGjF6WyqXyu3GVL0Xcs3qmUAkBXDqNrjmfiwhBhk1a4DOvvH5tWKoPrRA/exec", {
+    method: "POST",
+    body: JSON.stringify({
+      change: value,
+      total: count
+    }),
+    headers: { "Content-Type": "application/json" }
+  }).catch(error => {
+    console.error("送信エラー:", error);
+  });
 }
 </script>
 </body>
